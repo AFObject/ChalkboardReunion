@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>透明文本输入框设计</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 3.2rem;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to right, #ffffff, #ffd700);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+        }
+        
+        .subtitle {
+            font-size: 1.4rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .input-group {
+            margin-bottom: 30px;
+        }
+        
+        .input-label {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* 透明文本输入框样式 */
+        .transparent-input {
+            width: 100%;
+            padding: 18px 20px;
+            font-size: 1.1rem;
+            background: transparent;
+            border: none;
+            color: white;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 2px 10px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+        }
+        
+        /* 聚焦状态效果 */
+        .transparent-input:focus {
+            outline: none;
+            box-shadow: 
+                0 0 0 2px rgba(255, 215, 0, 0.3),
+                inset 0 2px 15px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* 悬停状态效果 */
+        .transparent-input:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        /* 输入框占位符样式 */
+        .transparent-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+        }
+        
+        /* 输入框容器（用于装饰效果） */
+        .input-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        /* 装饰性底部线条（仅在聚焦时显示） */
+        .input-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(to right, #ffd700, #fdbb2d);
+            border-radius: 2px;
+            transition: width 0.4s ease;
+        }
+        
+        .transparent-input:focus ~ .input-container::after {
+            width: 100%;
+        }
+        
+        /* 输入框图标 */
+        .input-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 1.2rem;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        
+        .transparent-input:focus ~ .input-icon {
+            color: #ffd700;
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        /* 示例卡片 */
+        .examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .example-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            transition: transform 0.3s ease;
+        }
+        
+        .example-card:hover {
+            transform: translateY(-5px);
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        .example-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        
+        .example-card p {
+            line-height: 1.6;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+        
+        .code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+        
+        .note {
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 3px solid #ffd700;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 20px;
+        }
+        
+        .note p {
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2.4rem; }
+            .subtitle { font-size: 1.1rem; }
+            .container { padding: 25px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>透明文本输入框设计</h1>
+            <p class="subtitle">与黑板重聚画板设计完美融合的无边框输入框</p>
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">用户名</label>
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    class="transparent-input" 
+                    placeholder="输入您的用户名"
+                >
+                <span class="input-icon">👤</span>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">电子邮箱</label>
+            <div class="input-container">
+                <input 
+                    type="email" 
+                    class="transparent-input" 
+                    placeholder="example@email.com"
+                >
+                <span class="input-icon">✉️</span>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">留言信息</label>
+            <div class="input-container">
+                <textarea 
+                    class="transparent-input" 
+                    placeholder="输入您的留言..."
+                    rows="4"
+                ></textarea>
+                <span class="input-icon">📝</span>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label">密码</label>
+            <div class="input-container">
+                <input 
+                    type="password" 
+                    class="transparent-input" 
+                    placeholder="输入您的密码"
+                >
+                <span class="input-icon">🔒</span>
+            </div>
+        </div>
+        
+        <div class="note">
+            <p><strong>设计说明：</strong>这些输入框采用全透明背景设计，无任何边框。聚焦时显示优雅的金色渐变下划线，悬停时有轻微背景变化提供视觉反馈，完美融入现有设计风格。</p>
+        </div>
+        
+        <div class="examples">
+            <div class="example-card">
+                <h3>输入框HTML结构</h3>
+                <p>透明输入框的基本HTML结构：</p>
+                <div class="code">
+&lt;div class="input-container"&gt;<br>
+&nbsp;&nbsp;&lt;input <br>
+&nbsp;&nbsp;&nbsp;&nbsp;type="text" <br>
+&nbsp;&nbsp;&nbsp;&nbsp;class="transparent-input" <br>
+&nbsp;&nbsp;&nbsp;&nbsp;placeholder="输入文本..."<br>
+&nbsp;&nbsp;&gt;<br>
+&nbsp;&nbsp;&lt;span class="input-icon"&gt;👤&lt;/span&gt;<br>
+&lt;/div&gt;
+                </div>
+            </div>
+            
+            <div class="example-card">
+                <h3>核心CSS样式</h3>
+                <p>实现透明无边框效果的关键CSS：</p>
+                <div class="code">
+.transparent-input {<br>
+&nbsp;&nbsp;background: transparent;<br>
+&nbsp;&nbsp;border: none;<br>
+&nbsp;&nbsp;color: white;<br>
+&nbsp;&nbsp;box-shadow: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;0 0 0 1px rgba(255,255,255,0.1),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;inset 0 2px 10px rgba(0,0,0,0.1);<br>
+}<br><br>
+.transparent-input:focus {<br>
+&nbsp;&nbsp;outline: none;<br>
+&nbsp;&nbsp;box-shadow: <br>
+&nbsp;&nbsp;&nbsp;&nbsp;0 0 0 2px rgba(255,215,0,0.3),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;inset 0 2px 15px rgba(0,0,0,0.2);<br>
+}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 添加简单的输入框交互效果
+        document.querySelectorAll('.transparent-input').forEach(input => {
+            // 添加焦点效果
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            
+            // 移除焦点效果
+            input.addEventListener('blur', function() {
+                this.parentElement.classList.remove('focused');
+            });
+            
+            // 添加输入效果
+            input.addEventListener('input', function() {
+                if (this.value.length > 0) {
+                    this.classList.add('has-value');
+                } else {
+                    this.classList.remove('has-value');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
