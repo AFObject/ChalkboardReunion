@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>黑板重聚 - 夏日共享画板</title>
+    <title>2610 夏日赛博黑板</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -43,8 +43,16 @@
                 </div>
 
                 <div class="tool-group">
+                    <div id="color-palette">
+                        <button class="color-swatch" data-color="#ff0000" style="background: #ff0000"></button>
+                        <button class="color-swatch" data-color="#ffff00" style="background: #ffff00"></button>
+                        <button class="color-swatch" data-color="#00ff00" style="background: #00ff00"></button>
+                        <button class="color-swatch" data-color="#009fff" style="background: #0095ff"></button>
+                        <button class="color-swatch" data-color="#8b00ff" style="background: #8b00ff"></button>
+                        <button class="color-swatch" data-color="#000000" style="background: #000000"></button>
+                    </div>
                     <input type="color" id="color-picker" class="color-picker" value="#000000" title="选择颜色">
-                    <button id="save-btn">
+                    <button class="tool" id="save-btn">
                         保存
                     </button>
                 </div>
@@ -91,11 +99,11 @@
         <p>ChalkboardReunion &copy; 2025 | 2610 | Powered by Firebase & Vercel</p>
     </footer>
 
-    <div class="podium-wrapper" id="podium-wrapper">
+    <!-- <div class="podium-wrapper" id="podium-wrapper">
         <div class="podium">
             <img id="avatar" class="teacher-avatar" src="" alt="老师头像" />
         </div>
-    </div>
+    </div> -->
 
     <script src="script.js"></script>
     <script src="addon.js"></script>
