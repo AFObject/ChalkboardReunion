@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黑板重聚 - 夏日共享画板</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>   
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="floating-items">
+        <div class="floating-item" style="top: 10%; left: 5%;">✏️</div>
+        <div class="floating-item" style="top: 20%; left: 85%;">🎨</div>
+        <div class="floating-item" style="top: 40%; left: 15%;">🖌️</div>
+        <div class="floating-item" style="top: 70%; left: 75%;">🧑‍🎨</div>
+        <div class="floating-item" style="top: 60%; left: 40%;">🌟</div>
+        <div class="floating-item" style="top: 30%; left: 60%;">💡</div>
+    </div>
+    
+    <div class="header">
+        <h1>黑板重聚</h1>
+        <p class="subtitle">即使相隔千里，也能一起在黑板前创作！延续教室里的创意传统，让暑假不再孤单。</p>
+        <p class="subtitle">邀请好友，一起绘制属于你们的夏日记忆！</p>
+    </div>
+    
+    <div class="container">
+        <div class="toolbar">
+            <div class="tool-group">
+                <div class="tool active" id="pencil-tool" title="画笔">
+                    ✏️ 画笔
+                </div>
+                <div class="tool" id="eraser-tool" title="橡皮擦">
+                    🧽 橡皮擦
+                </div>
+                <div class="brush-size">
+                    <span>画笔粗细:</span>
+                    <input type="range" id="brush-size" min="1" max="50" value="5">
+                    <span class="size-display" id="brush-size-display">5</span>
+                </div>
+            </div>
+            
+            <div class="tool-group">
+                <input type="color" id="color-picker" class="color-picker" value="#FF0000" title="选择颜色">
+                <button id="clear-btn">
+                    🧹 清除画布
+                </button>
+                <button id="save-btn">
+                    💾 保存作品
+                </button>
+                <button id="invite-btn">
+                    📩 邀请朋友
+                </button>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="canvas" width="900" height="500"></canvas>
+            <div class="chalk-effect"></div>
+        </div>
+        
+        <div class="stats">
+            <div class="user-count">
+                <div class="status-indicator"></div>
+                <span>当前在线: <strong>3</strong> 位朋友正在创作</span>
+            </div>
+            <div class="connection-status">
+                <div class="status-indicator"></div>
+                <span>实时同步已连接</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h2>如何使用这个共享画板</h2>
+        <div class="instructions-grid">
+            <div class="instruction-card">
+                <div class="instruction-icon">1</div>
+                <h3>邀请朋友</h3>
+                <p>点击"邀请朋友"按钮，将当前链接发送给好友，最多支持10人同时创作</p>
+            </div>
+            <div class="instruction-card">
+                <div class="instruction-icon">2</div>
+                <h3>选择工具</h3>
+                <p>使用画笔或橡皮擦工具，调整画笔粗细和颜色开始创作</p>
+            </div>
+            <div class="instruction-card">
+                <div class="instruction-icon">3</div>
+                <h3>共同创作</h3>
+                <p>所有参与者的绘制内容会实时同步，共同完成一幅作品</p>
+            </div>
+            <div class="instruction-card">
+                <div class="instruction-icon">4</div>
+                <h3>保存作品</h3>
+                <p>完成后点击"保存作品"将共同创作保存为图片留念</p>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>黑板重聚 &copy; 2023 | 让创意跨越距离 | 部署在Vercel</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
