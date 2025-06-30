@@ -36,9 +36,9 @@ const eraserTool = document.getElementById('eraser-tool');
 const brushSize = document.getElementById('brush-size');
 const brushSizeDisplay = document.getElementById('brush-size-display');
 const colorPicker = document.getElementById('color-picker');
-const clearBtn = document.getElementById('clear-btn');
+// const clearBtn = document.getElementById('clear-btn');
 const saveBtn = document.getElementById('save-btn');
-const inviteBtn = document.getElementById('invite-btn');
+// const inviteBtn = document.getElementById('invite-btn');
 
 function setActiveTool(tool) {
     pencilTool.classList.remove('active');
@@ -73,30 +73,11 @@ colorPicker.addEventListener('input', () => {
     }
 });
 
-clearBtn.addEventListener('click', () => {
-    if (confirm('确定要清除整个画布吗？所有参与者的内容都会被清除！')) {
-        canvas.clear();
-        canvas.backgroundColor = '#ffffff';
-        drawingRef.set(JSON.stringify(canvas));
-    }
-});
-
 saveBtn.addEventListener('click', () => {
     const link = document.createElement('a');
     link.download = '黑板重聚-创作作品.png';
     link.href = canvas.toDataURL({ format: 'png', quality: 0.95 });
     link.click();
-});
-
-inviteBtn.addEventListener('click', () => {
-    const url = window.location.href;
-    if (navigator.share) {
-        navigator.share({ title: '加入我的共享画板！', text: '来一起在黑板前创作吧！', url })
-            .catch(console.error);
-    } else {
-        navigator.clipboard.writeText(url);
-        alert('链接已复制到剪贴板！\n\n' + url);
-    }
 });
 
 // 🌐 同步：监听 Firebase 更新画布
@@ -140,11 +121,25 @@ presenceRef.on('value', (snapshot) => {
 });
 
 // 📐 画布尺寸自适应
-function resizeCanvas() {
-    canvas.setDimensions({
-        width: Math.min(900, window.innerWidth - 40),
-        height: 700
-    });
+function resizeCanvasDisplay() {
+    const fatherCanvas = document.getElementById('father-canvas'); // 新的父容器
+    const canvasWrapper = canvas.wrapperEl; // 就是 .canvas-container
+    console.log('Canvas wrapper:', canvasWrapper);
+    // const container = document.getElementById('canvas-container');
+    const containerWidth = fatherCanvas.clientWidth;
+    const scale = containerWidth / 1200;
+
+    // 缩放整个画布容器（不是 canvas 本体）
+    canvasWrapper.style.transformOrigin = 'top left';
+    canvasWrapper.style.transform = `scale(${scale})`;
+
+    // 设置容器尺寸，使其能撑出正确显示区域
+    canvasWrapper.style.width = '1200px';
+    canvasWrapper.style.height = '900px';
+
+    const visibleHeight = 900 * scale;
+    fatherCanvas.style.height = `${visibleHeight}px`;
 }
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+
+window.addEventListener('resize', resizeCanvasDisplay);
+resizeCanvasDisplay(); // 初次调用

@@ -30,6 +30,7 @@ chatRef.limitToLast(100).on('child_added', snapshot => {
     const time = new Date(timestamp).toLocaleTimeString();
     const msg = document.createElement('div');
     msg.innerHTML = `<strong>${user}</strong> <small>${time}</small><br>${text}`;
+    msg.className = `chatmsg`;
     messagesBox.appendChild(msg);
     messagesBox.scrollTop = messagesBox.scrollHeight;
 });
