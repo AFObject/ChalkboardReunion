@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>黑板重聚 - 夏日共享画板</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>   
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>  
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script> 
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -59,9 +61,9 @@
         </div>
         
         <div class="stats">
-            <div class="user-count">
+            <div class="user-count-label">
                 <div class="status-indicator"></div>
-                <span>当前在线: <strong>3</strong> 位朋友正在创作</span>
+                <span>当前在线: <strong id="user-count">3</strong> 人正在创作</span>
             </div>
             <div class="connection-status">
                 <div class="status-indicator"></div>

@@ -160,7 +160,7 @@ button:active,
     gap: 20px;
 }
 
-.user-count,
+.user-count-label,
 .connection-status {
     display: flex;
     align-items: center;
