@@ -92,37 +92,50 @@ swatches.forEach(btn => {
 // ✍️ 每次绘制完成上传笔迹
 fabricCanvas.on('path:created', (e) => {
     const path = e.path;
-    const rawPath = path.path;
-    if (!rawPath || rawPath.length < 2) return;
 
-    const points = rawPath.map(seg => seg.slice(1));
-    const strokeData = {
-        tool: currentTool,
-        color: currentColor,
-        width: currentWidth,
-        points: points,
+    // 移除末尾闭合命令（如有）
+    const lastSeg = path.path[path.path.length - 1];
+    if (lastSeg && lastSeg[0] === 'Z') {
+        path.path.pop();
+    }
+
+    // 强制设置为线条，不填充
+    path.set({
+        fill: null,
+        strokeLineCap: 'round',
+        strokeLineJoin: 'round',
+        selectable: false,
+        evented: false,
+    });
+
+    // 上传 JSON 数据
+    const pathData = path.toObject([
+        'path', 'stroke', 'strokeWidth', 'fill',
+        'strokeLineCap', 'strokeLineJoin'
+    ]);
+
+    strokesRef.push({
+        object: pathData,
         timestamp: Date.now()
-    };
-    strokesRef.push(strokeData);
+    });
 });
 
 // 📥 Firebase 实时同步：还原历史笔迹
 strokesRef.limitToLast(200).on('child_added', (snapshot) => {
     const data = snapshot.val();
-    if (!data || !data.points || data.points.length < 2) return;
+    if (!data || !data.object) return;
 
-    const pathStr = `M ${data.points[0][0]} ${data.points[0][1]} ` +
-        data.points.slice(1).map(p => `L ${p[0]} ${p[1]}`).join(' ');
-
-    const path = new fabric.Path(pathStr, {
-        stroke: data.tool === 'eraser' ? '#ffffff' : data.color,
-        strokeWidth: data.width,
-        fill: null,
-        selectable: false,
-        evented: false,
+    fabric.util.enlivenObjects([data.object], (objects) => {
+        const path = objects[0];
+        path.set({
+            selectable: false,
+            evented: false,
+            fill: null, // 保证不闭合
+            strokeLineCap: 'round',
+            strokeLineJoin: 'round',
+        });
+        fabricCanvas.add(path);
     });
-
-    fabricCanvas.add(path);
 });
 
 // ⏳ 每 5 秒上传图像并清空矢量笔迹
