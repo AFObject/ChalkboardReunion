@@ -1,15 +1,17 @@
 // 📁 shared_canvas_fixed.js
-// 🎨 初始化 Fabric 画布
-const canvas = new fabric.Canvas('canvas', {
-    isDrawingMode: true,
-    backgroundColor: '#ffffff'
-});
+// 🎨 初始化原生 Canvas 替代 Fabric
+const canvasEl = document.getElementById('canvas');
+const ctx = canvasEl.getContext('2d');
+const canvasWidth = 1200;
+const canvasHeight = 900;
+canvasEl.width = canvasWidth;
+canvasEl.height = canvasHeight;
 
 // 🧩 Firebase 配置
 const firebaseConfig = {
     apiKey: "AIzaSyCh-lIY-4CVMkQF9VU7PVedHacrxJAmSHk",
     authDomain: "chalkboard-reunion.firebaseapp.com",
-    databaseURL: "https://chalkboard-reunion-default-rtdb.asia-southeast1.firebasedatabase.app", // ✅ 加这一行
+    databaseURL: "https://chalkboard-reunion-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "chalkboard-reunion",
     storageBucket: "chalkboard-reunion.firebasestorage.app",
     messagingSenderId: "24328206483",
@@ -17,28 +19,26 @@ const firebaseConfig = {
     measurementId: "G-HBHVPSL761"
 };
 
-
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
-const drawingRef = database.ref('drawing');
+const strokesRef = database.ref('drawing/strokes');
+const baseImageRef = database.ref('drawing/baseImage');
 
-// 🖌️ 当前工具状态
+// 📌 当前状态
+let drawing = false;
 let currentTool = 'pencil';
-let isSyncing = false; // 防止递归同步
+let currentColor = '#000000';
+let currentWidth = 4;
+let lastX = 0;
+let lastY = 0;
+let strokeBuffer = [];
 
-// 📏 初始化画笔
-canvas.freeDrawingBrush.color = '#000000';
-canvas.freeDrawingBrush.width = 4;
-
-// 🧰 工具按钮
 const pencilTool = document.getElementById('pencil-tool');
 const eraserTool = document.getElementById('eraser-tool');
 const brushSize = document.getElementById('brush-size');
 const brushSizeDisplay = document.getElementById('brush-size-display');
 const colorPicker = document.getElementById('color-picker');
-// const clearBtn = document.getElementById('clear-btn');
 const saveBtn = document.getElementById('save-btn');
-// const inviteBtn = document.getElementById('invite-btn');
 
 function setActiveTool(tool) {
     pencilTool.classList.remove('active');
@@ -46,67 +46,106 @@ function setActiveTool(tool) {
 
     if (tool === 'pencil') {
         pencilTool.classList.add('active');
-        canvas.isDrawingMode = true;
-        canvas.freeDrawingBrush.color = colorPicker.value;
         currentTool = 'pencil';
-    } else {
+    } else if (tool === 'eraser') {
         eraserTool.classList.add('active');
-        canvas.isDrawingMode = true;
-        canvas.freeDrawingBrush.color = '#ffffff';
         currentTool = 'eraser';
     }
 }
 
-// 🖱️ 工具栏事件绑定
 pencilTool.addEventListener('click', () => setActiveTool('pencil'));
 eraserTool.addEventListener('click', () => setActiveTool('eraser'));
 
 brushSize.addEventListener('input', () => {
-    const size = brushSize.value;
-    brushSizeDisplay.textContent = size;
-    canvas.freeDrawingBrush.width = parseInt(size);
+    currentWidth = parseInt(brushSize.value);
+    brushSizeDisplay.textContent = currentWidth;
 });
 
 colorPicker.addEventListener('input', () => {
-    if (currentTool === 'pencil') {
-        canvas.freeDrawingBrush.color = colorPicker.value;
+    currentColor = colorPicker.value;
+});
+
+canvasEl.addEventListener('mousedown', (e) => {
+    drawing = true;
+    const rect = canvasEl.getBoundingClientRect();
+    lastX = (e.clientX - rect.left) * (canvasWidth / rect.width);
+    lastY = (e.clientY - rect.top) * (canvasHeight / rect.height);
+    strokeBuffer = [[lastX, lastY]];
+});
+
+canvasEl.addEventListener('mousemove', (e) => {
+    if (!drawing) return;
+    const rect = canvasEl.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvasWidth / rect.width);
+    const y = (e.clientY - rect.top) * (canvasHeight / rect.height);
+    ctx.beginPath();
+    ctx.lineWidth = currentWidth;
+    ctx.lineCap = 'round';
+
+    if (currentTool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+    } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = currentColor;
     }
+
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    lastX = x;
+    lastY = y;
+    strokeBuffer.push([x, y]);
+});
+
+canvasEl.addEventListener('mouseup', () => {
+    drawing = false;
+    if (strokeBuffer.length > 1) {
+        const strokeData = {
+            tool: currentTool,
+            color: currentColor,
+            width: currentWidth,
+            points: strokeBuffer,
+            timestamp: Date.now()
+        };
+        strokesRef.push(strokeData);
+    }
+});
+
+strokesRef.limitToLast(200).on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    if (!data || !data.points) return;
+    ctx.beginPath();
+    ctx.lineWidth = data.width;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = data.tool === 'eraser' ? 'rgba(0,0,0,1)' : data.color;
+    ctx.globalCompositeOperation = data.tool === 'eraser' ? 'destination-out' : 'source-over';
+    const [first, ...rest] = data.points;
+    ctx.moveTo(first[0], first[1]);
+    for (let [x, y] of rest) ctx.lineTo(x, y);
+    ctx.stroke();
+});
+
+setInterval(() => {
+    const dataUrl = canvasEl.toDataURL('image/png');
+    baseImageRef.set(dataUrl).then(() => {
+        strokesRef.remove(); // ✅ 只在上传成功后清除笔迹
+    });
+}, 5000);
+
+baseImageRef.once('value').then(snapshot => {
+    const url = snapshot.val();
+    if (!url) return;
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0);
+    img.src = url;
 });
 
 saveBtn.addEventListener('click', () => {
     const link = document.createElement('a');
     link.download = '黑板重聚-创作作品.png';
-    link.href = canvas.toDataURL({ format: 'png', quality: 0.95 });
+    link.href = canvasEl.toDataURL('image/png');
     link.click();
-});
-
-// 🌐 同步：监听 Firebase 更新画布
-function syncToFirebase() {
-    if (isSyncing) return;
-    drawingRef.set(JSON.stringify(canvas));
-}
-
-canvas.on('object:added', (e) => {
-    if (!isSyncing) syncToFirebase();
-});
-canvas.on('object:modified', (e) => {
-    if (!isSyncing) syncToFirebase();
-});
-canvas.on('object:removed', (e) => {
-    if (!isSyncing) syncToFirebase();
-});
-
-drawingRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        isSyncing = true;
-        canvas.clear();
-        canvas.backgroundColor = '#ffffff';
-        canvas.loadFromJSON(data, () => {
-            canvas.renderAll();
-            isSyncing = false;
-        });
-    }
 });
 
 // 👥 在线用户统计
@@ -120,26 +159,20 @@ presenceRef.on('value', (snapshot) => {
     if (counter) counter.textContent = count;
 });
 
-// 📐 画布尺寸自适应
+// 📐 缩放逻辑保留
 function resizeCanvasDisplay() {
-    const fatherCanvas = document.getElementById('father-canvas'); // 新的父容器
-    const canvasWrapper = canvas.wrapperEl; // 就是 .canvas-container
-    console.log('Canvas wrapper:', canvasWrapper);
-    // const container = document.getElementById('canvas-container');
+    const fatherCanvas = document.getElementById('father-canvas');
+
     const containerWidth = fatherCanvas.clientWidth;
-    const scale = containerWidth / 1200;
+    const scale = containerWidth / canvasWidth;
 
-    // 缩放整个画布容器（不是 canvas 本体）
-    canvasWrapper.style.transformOrigin = 'top left';
-    canvasWrapper.style.transform = `scale(${scale})`;
+    canvasEl.style.transformOrigin = 'top left';
+    canvasEl.style.transform = `scale(${scale})`;
 
-    // 设置容器尺寸，使其能撑出正确显示区域
-    canvasWrapper.style.width = '1200px';
-    canvasWrapper.style.height = '900px';
-
-    const visibleHeight = 900 * scale;
-    fatherCanvas.style.height = `${visibleHeight}px`;
+    // 保持逻辑大小不变，设置宽度高度供缩放使用
+    canvasEl.style.width = `${canvasWidth}px`;
+    canvasEl.style.height = `${canvasHeight}px`;
 }
 
 window.addEventListener('resize', resizeCanvasDisplay);
-resizeCanvasDisplay(); // 初次调用
+resizeCanvasDisplay();
