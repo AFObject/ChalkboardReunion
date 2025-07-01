@@ -139,7 +139,7 @@ button:active,
 }
 
 .size-display {
-    width: 40px;
+    width: 30px;
     text-align: center;
     font-weight: bold;
     font-size: 1.1rem;
@@ -148,7 +148,7 @@ button:active,
 #father-canvas {
     position: relative;
     width: 100%;
-    aspect-ratio: 4 / 3; /* ✅ 强制宽高比为 4:3 */
+    height: auto;
     background: #e4e4e4;
     justify-content: center;
     align-items: center;
@@ -157,8 +157,10 @@ button:active,
 
 #canvas {
     display: block;
+    max-width: 100%;
+    height: auto;
     background: #ffffff;
-    image-rendering: pixelated;
+    border-radius: 5px;
 }
 
 canvas {

@@ -1,11 +1,13 @@
-// 📁 shared_canvas_fixed.js
-// 🎨 初始化原生 Canvas 替代 Fabric
-const canvasEl = document.getElementById('canvas');
-const ctx = canvasEl.getContext('2d');
+// 📁 shared_canvas_fabric.js
+// 🎨 使用 Fabric.js 初始化画布
 const canvasWidth = 1200;
 const canvasHeight = 900;
-canvasEl.width = canvasWidth;
-canvasEl.height = canvasHeight;
+
+const fabricCanvas = new fabric.Canvas('canvas', {
+    isDrawingMode: true,
+    width: canvasWidth,
+    height: canvasHeight,
+});
 
 // 🧩 Firebase 配置
 const firebaseConfig = {
@@ -25,14 +27,11 @@ const strokesRef = database.ref('drawing/strokes');
 const baseImageRef = database.ref('drawing/baseImage');
 
 // 📌 当前状态
-let drawing = false;
 let currentTool = 'pencil';
 let currentColor = '#000000';
 let currentWidth = 4;
-let lastX = 0;
-let lastY = 0;
-let strokeBuffer = [];
 
+// 🎨 工具栏 DOM
 const pencilTool = document.getElementById('pencil-tool');
 const eraserTool = document.getElementById('eraser-tool');
 const brushSize = document.getElementById('brush-size');
@@ -40,132 +39,118 @@ const brushSizeDisplay = document.getElementById('brush-size-display');
 const colorPicker = document.getElementById('color-picker');
 const saveBtn = document.getElementById('save-btn');
 
+// 🎨 工具栏逻辑
 function setActiveTool(tool) {
     pencilTool.classList.remove('active');
     eraserTool.classList.remove('active');
 
     if (tool === 'pencil') {
         pencilTool.classList.add('active');
+        fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+        fabricCanvas.freeDrawingBrush.color = currentColor;
+        fabricCanvas.freeDrawingBrush.width = currentWidth;
         currentTool = 'pencil';
     } else if (tool === 'eraser') {
         eraserTool.classList.add('active');
+        // 模拟橡皮：使用白色或 destination-out（根据需要）
+        const eraser = new fabric.PencilBrush(fabricCanvas);
+        eraser.color = '#ffffff';
+        eraser.width = currentWidth + 4; // 橡皮稍大一点
+        fabricCanvas.freeDrawingBrush = eraser;
         currentTool = 'eraser';
     }
 }
+setActiveTool('pencil'); // 默认选中铅笔工具
 
 pencilTool.addEventListener('click', () => setActiveTool('pencil'));
 eraserTool.addEventListener('click', () => setActiveTool('eraser'));
 
 brushSize.addEventListener('input', () => {
     currentWidth = parseInt(brushSize.value);
+    fabricCanvas.freeDrawingBrush.width = currentWidth;
     brushSizeDisplay.textContent = currentWidth;
 });
 
 colorPicker.addEventListener('input', () => {
     currentColor = colorPicker.value;
+    if (currentTool === 'pencil') {
+        fabricCanvas.freeDrawingBrush.color = currentColor;
+    }
 });
 
-
+// 🎨 色板选择器
 const swatches = document.querySelectorAll('.color-swatch');
-
 swatches.forEach(btn => {
     btn.addEventListener('click', () => {
         const color = btn.dataset.color;
         currentColor = color;
-        // 更新颜色选择器（如果你保留原来的 input）
         if (colorPicker) colorPicker.value = color;
-        currentTool = 'pencil';
         setActiveTool('pencil');
     });
 });
 
+// ✍️ 每次绘制完成上传笔迹
+fabricCanvas.on('path:created', (e) => {
+    const path = e.path;
+    const rawPath = path.path;
+    if (!rawPath || rawPath.length < 2) return;
 
-function down(e) {
-    drawing = true;
-    const rect = canvasEl.getBoundingClientRect();
-    lastX = (e.clientX - rect.left) * (canvasWidth / rect.width);
-    lastY = (e.clientY - rect.top) * (canvasHeight / rect.height);
-    strokeBuffer = [[lastX, lastY]];
-}
-canvasEl.addEventListener('mousedown', down);
-canvasEl.addEventListener('pointerdown', down);
-
-function move(e) {
-    if (!drawing) return;
-    const rect = canvasEl.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvasWidth / rect.width);
-    const y = (e.clientY - rect.top) * (canvasHeight / rect.height);
-    ctx.beginPath();
-    ctx.lineWidth = currentWidth;
-    ctx.lineCap = 'round';
-
-    if (currentTool === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.strokeStyle = currentColor;
-    }
-
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    lastX = x;
-    lastY = y;
-    strokeBuffer.push([x, y]);
-}
-canvasEl.addEventListener('mousemove', move);
-canvasEl.addEventListener('pointermove', move);
-
-function up(e) {
-    drawing = false;
-    if (strokeBuffer.length > 1) {
-        const strokeData = {
-            tool: currentTool,
-            color: currentColor,
-            width: currentWidth,
-            points: strokeBuffer,
-            timestamp: Date.now()
-        };
-        strokesRef.push(strokeData);
-    }
-}
-canvasEl.addEventListener('mouseup', up);
-canvasEl.addEventListener('pointerup', up);
-
-strokesRef.limitToLast(200).on('child_added', (snapshot) => {
-    const data = snapshot.val();
-    if (!data || !data.points) return;
-    ctx.beginPath();
-    ctx.lineWidth = data.width;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = data.tool === 'eraser' ? 'rgba(0,0,0,1)' : data.color;
-    ctx.globalCompositeOperation = data.tool === 'eraser' ? 'destination-out' : 'source-over';
-    const [first, ...rest] = data.points;
-    ctx.moveTo(first[0], first[1]);
-    for (let [x, y] of rest) ctx.lineTo(x, y);
-    ctx.stroke();
+    const points = rawPath.map(seg => seg.slice(1));
+    const strokeData = {
+        tool: currentTool,
+        color: currentColor,
+        width: currentWidth,
+        points: points,
+        timestamp: Date.now()
+    };
+    strokesRef.push(strokeData);
 });
 
+// 📥 Firebase 实时同步：还原历史笔迹
+strokesRef.limitToLast(200).on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    if (!data || !data.points || data.points.length < 2) return;
+
+    const pathStr = `M ${data.points[0][0]} ${data.points[0][1]} ` +
+        data.points.slice(1).map(p => `L ${p[0]} ${p[1]}`).join(' ');
+
+    const path = new fabric.Path(pathStr, {
+        stroke: data.tool === 'eraser' ? '#ffffff' : data.color,
+        strokeWidth: data.width,
+        fill: null,
+        selectable: false,
+        evented: false,
+    });
+
+    fabricCanvas.add(path);
+});
+
+// ⏳ 每 5 秒上传图像并清空矢量笔迹
 setInterval(() => {
-    const dataUrl = canvasEl.toDataURL('image/png');
+    const dataUrl = fabricCanvas.toDataURL({
+        format: 'png',
+        multiplier: 1
+    });
     baseImageRef.set(dataUrl).then(() => {
-        strokesRef.remove(); // ✅ 只在上传成功后清除笔迹
+        strokesRef.remove();
     });
 }, 5000);
 
+// 🔄 初次加载 baseImage
 baseImageRef.once('value').then(snapshot => {
     const url = snapshot.val();
     if (!url) return;
-    const img = new Image();
-    img.onload = () => ctx.drawImage(img, 0, 0);
-    img.src = url;
+    fabric.Image.fromURL(url, function(img) {
+        img.selectable = false;
+        fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
+    });
 });
 
+// 💾 保存按钮：下载 PNG
 saveBtn.addEventListener('click', () => {
     const link = document.createElement('a');
-    link.download = '黑板重聚-创作作品.png';
-    link.href = canvasEl.toDataURL('image/png');
+    link.download = '作品.png';
+    link.href = fabricCanvas.toDataURL({ format: 'png' });
     link.click();
 });
 
@@ -182,17 +167,23 @@ presenceRef.on('value', (snapshot) => {
 
 // 📐 缩放逻辑保留
 function resizeCanvasDisplay() {
-    const fatherCanvas = document.getElementById('father-canvas');
-
+    const fatherCanvas = document.getElementById('father-canvas'); // 新的父容器
+    const canvasWrapper = fabricCanvas.wrapperEl; // 就是 .canvas-container
+    console.log('Canvas wrapper:', canvasWrapper);
+    // const container = document.getElementById('canvas-container');
     const containerWidth = fatherCanvas.clientWidth;
-    const scale = containerWidth / canvasWidth;
+    const scale = containerWidth / 1200;
 
-    canvasEl.style.transformOrigin = 'top left';
-    canvasEl.style.transform = `scale(${scale})`;
+    // 缩放整个画布容器（不是 canvas 本体）
+    canvasWrapper.style.transformOrigin = 'top left';
+    canvasWrapper.style.transform = `scale(${scale})`;
 
-    // 保持逻辑大小不变，设置宽度高度供缩放使用
-    canvasEl.style.width = `${canvasWidth}px`;
-    canvasEl.style.height = `${canvasHeight}px`;
+    // 设置容器尺寸，使其能撑出正确显示区域
+    canvasWrapper.style.width = '1200px';
+    canvasWrapper.style.height = '900px';
+
+    const visibleHeight = 900 * scale;
+    fatherCanvas.style.height = `${visibleHeight}px`;
 }
 
 window.addEventListener('resize', resizeCanvasDisplay);
