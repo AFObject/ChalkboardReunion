@@ -144,8 +144,16 @@ setInterval(() => {
         format: 'png',
         multiplier: 1
     });
-    baseImageRef.set(dataUrl).then(() => {
-        strokesRef.remove();
+    baseImageRef.set(dataUrl);
+
+    const cutoff = Date.now() - 30 * 1000; // 30 秒前
+    strokesRef.once('value').then(snapshot => {
+        snapshot.forEach(child => {
+            const data = child.val();
+            if (data.timestamp < cutoff) {
+                strokesRef.child(child.key).remove(); // ⏳ 删除过期 stroke
+            }
+        });
     });
 }, 5000);
 
