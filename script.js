@@ -73,6 +73,14 @@ canvasEl.addEventListener('mousedown', (e) => {
     strokeBuffer = [[lastX, lastY]];
 });
 
+canvasEl.addEventListener('pointerdown', (e) => {
+    drawing = true;
+    const rect = canvasEl.getBoundingClientRect();
+    lastX = (e.clientX - rect.left) * (canvasWidth / rect.width);
+    lastY = (e.clientY - rect.top) * (canvasHeight / rect.height);
+    strokeBuffer = [[lastX, lastY]];
+});
+
 canvasEl.addEventListener('mousemove', (e) => {
     if (!drawing) return;
     const rect = canvasEl.getBoundingClientRect();
@@ -98,7 +106,46 @@ canvasEl.addEventListener('mousemove', (e) => {
     strokeBuffer.push([x, y]);
 });
 
+canvasEl.addEventListener('pointermove', (e) => {
+    if (!drawing) return;
+    const rect = canvasEl.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvasWidth / rect.width);
+    const y = (e.clientY - rect.top) * (canvasHeight / rect.height);
+    ctx.beginPath();
+    ctx.lineWidth = currentWidth;
+    ctx.lineCap = 'round';
+
+    if (currentTool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+    } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = currentColor;
+    }
+
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    lastX = x;
+    lastY = y;
+    strokeBuffer.push([x, y]);
+});
+
 canvasEl.addEventListener('mouseup', () => {
+    drawing = false;
+    if (strokeBuffer.length > 1) {
+        const strokeData = {
+            tool: currentTool,
+            color: currentColor,
+            width: currentWidth,
+            points: strokeBuffer,
+            timestamp: Date.now()
+        };
+        strokesRef.push(strokeData);
+    }
+});
+
+canvasEl.addEventListener('pointerup', () => {
     drawing = false;
     if (strokeBuffer.length > 1) {
         const strokeData = {
