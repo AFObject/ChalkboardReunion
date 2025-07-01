@@ -65,23 +65,32 @@ colorPicker.addEventListener('input', () => {
     currentColor = colorPicker.value;
 });
 
-canvasEl.addEventListener('mousedown', (e) => {
+
+const swatches = document.querySelectorAll('.color-swatch');
+
+swatches.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        currentColor = color;
+        // 更新颜色选择器（如果你保留原来的 input）
+        if (colorPicker) colorPicker.value = color;
+        currentTool = 'pencil';
+        setActiveTool('pencil');
+    });
+});
+
+
+function down(e) {
     drawing = true;
     const rect = canvasEl.getBoundingClientRect();
     lastX = (e.clientX - rect.left) * (canvasWidth / rect.width);
     lastY = (e.clientY - rect.top) * (canvasHeight / rect.height);
     strokeBuffer = [[lastX, lastY]];
-});
+}
+canvasEl.addEventListener('mousedown', down);
+canvasEl.addEventListener('pointerdown', down);
 
-canvasEl.addEventListener('pointerdown', (e) => {
-    drawing = true;
-    const rect = canvasEl.getBoundingClientRect();
-    lastX = (e.clientX - rect.left) * (canvasWidth / rect.width);
-    lastY = (e.clientY - rect.top) * (canvasHeight / rect.height);
-    strokeBuffer = [[lastX, lastY]];
-});
-
-canvasEl.addEventListener('mousemove', (e) => {
+function move(e) {
     if (!drawing) return;
     const rect = canvasEl.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (canvasWidth / rect.width);
@@ -104,34 +113,11 @@ canvasEl.addEventListener('mousemove', (e) => {
     lastX = x;
     lastY = y;
     strokeBuffer.push([x, y]);
-});
+}
+canvasEl.addEventListener('mousemove', move);
+canvasEl.addEventListener('pointermove', move);
 
-canvasEl.addEventListener('pointermove', (e) => {
-    if (!drawing) return;
-    const rect = canvasEl.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvasWidth / rect.width);
-    const y = (e.clientY - rect.top) * (canvasHeight / rect.height);
-    ctx.beginPath();
-    ctx.lineWidth = currentWidth;
-    ctx.lineCap = 'round';
-
-    if (currentTool === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.strokeStyle = currentColor;
-    }
-
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    lastX = x;
-    lastY = y;
-    strokeBuffer.push([x, y]);
-});
-
-canvasEl.addEventListener('mouseup', () => {
+function up(e) {
     drawing = false;
     if (strokeBuffer.length > 1) {
         const strokeData = {
@@ -143,21 +129,9 @@ canvasEl.addEventListener('mouseup', () => {
         };
         strokesRef.push(strokeData);
     }
-});
-
-canvasEl.addEventListener('pointerup', () => {
-    drawing = false;
-    if (strokeBuffer.length > 1) {
-        const strokeData = {
-            tool: currentTool,
-            color: currentColor,
-            width: currentWidth,
-            points: strokeBuffer,
-            timestamp: Date.now()
-        };
-        strokesRef.push(strokeData);
-    }
-});
+}
+canvasEl.addEventListener('mouseup', up);
+canvasEl.addEventListener('pointerup', up);
 
 strokesRef.limitToLast(200).on('child_added', (snapshot) => {
     const data = snapshot.val();

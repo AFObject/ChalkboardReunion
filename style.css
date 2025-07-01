@@ -161,6 +161,14 @@ button:active,
     image-rendering: pixelated;
 }
 
+canvas {
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
 .stats {
     display: flex;
     justify-content: space-between;
