@@ -2,6 +2,9 @@
 // 🎨 使用 Fabric.js 初始化画布
 const canvasWidth = 1200;
 const canvasHeight = 900;
+const MAX_STROKES_TO_KEEP = 200;
+let canvasFullySynced = false;
+let lastSyncTime = Date.now();
 
 const fabricCanvas = new fabric.Canvas('canvas', {
     isDrawingMode: true,
@@ -139,46 +142,75 @@ strokesRef.limitToLast(200).on('child_added', (snapshot) => {
 });
 
 // ⏳ 每 5 秒上传图像并清空矢量笔迹
-setInterval(() => {
-    const dataUrl = fabricCanvas.toDataURL({
-        format: 'png',
-        multiplier: 1
-    });
-    baseImageRef.set(dataUrl);
+function updateBaseImageToFirebase() {
+    if (!canvasFullySynced) return;
+    const uploadTime = Date.now();
+    if (uploadTime - lastSyncTime < 15000) return; // 初次进入至少等 15 秒
 
-    const cutoff = Date.now() - 60 * 1000; // 30 秒前
+    const dataUrl = fabricCanvas.toDataURL('image/png');
+
+    // 上传 baseImage
+    baseImageRef.set({
+        data: dataUrl,
+        timestamp: uploadTime
+    });
+
+    // 🔁 清理旧 strokes，只保留最近 MAX_STROKES_TO_KEEP 条
     strokesRef.once('value').then(snapshot => {
+        const children = [];
         snapshot.forEach(child => {
             const data = child.val();
-            if (data.timestamp < cutoff) {
-                strokesRef.child(child.key).remove(); // ⏳ 删除过期 stroke
-            }
+            children.push({
+                key: child.key,
+                timestamp: data.timestamp || 0
+            });
+        });
+
+        // 时间从新到旧排序
+        children.sort((a, b) => b.timestamp - a.timestamp);
+
+        // 删除多余部分
+        const toDelete = children.slice(MAX_STROKES_TO_KEEP);
+        toDelete.forEach(entry => {
+            strokesRef.child(entry.key).remove();
         });
     });
-}, 30000);
+}
+setInterval(updateBaseImageToFirebase, 20000); // 每 20 秒执行
+
+window.addEventListener('beforeunload', updateBaseImageToFirebase); // 页面关闭时也上传
 
 // 🔄 初次加载 baseImage
 function loadBaseImage() {
-    console.log('Loading base image from Firebase...');
     baseImageRef.once('value').then(snapshot => {
         const url = snapshot.val();
         if (!url) return;
+        lastSyncTime = Date.now(); // 更新最后同步时间
 
         fabric.Image.fromURL(url, function(img) {
             img.selectable = false;
             fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
 
-            // ✅ 加载所有 strokes，不加时间限制
+            // ⬇ 加载全部 strokes
             strokesRef.once('value').then(snapshot => {
+                const pending = [];
                 snapshot.forEach(child => {
                     const data = child.val();
                     if (data && data.object) {
-                        fabric.util.enlivenObjects([data.object], (objects) => {
-                            const path = objects[0];
-                            path.set({ selectable: false, evented: false, fill: null });
-                            fabricCanvas.add(path);
-                        });
+                        pending.push(new Promise(resolve => {
+                            fabric.util.enlivenObjects([data.object], (objects) => {
+                                const path = objects[0];
+                                path.set({ selectable: false, evented: false, fill: null });
+                                fabricCanvas.add(path);
+                                resolve();
+                            });
+                        }));
                     }
+                });
+
+                // ✅ 所有 strokes 加载完成后，设置同步标志
+                Promise.all(pending).then(() => {
+                    canvasFullySynced = true;
                 });
             });
         });

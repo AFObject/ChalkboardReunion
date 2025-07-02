@@ -25,11 +25,21 @@ sendBtn.addEventListener('click', () => {
 });
 
 // 监听新消息
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${month}-${day} ${hours}:${minutes}`;
+}
+
+// 使用示例 
 chatRef.limitToLast(100).on('child_added', snapshot => {
     const { user, text, timestamp } = snapshot.val();
-    const time = new Date(timestamp).toLocaleTimeString();
+    const formattedTime = formatTime(timestamp); 
     const msg = document.createElement('div');
-    msg.innerHTML = `<strong>${user}</strong> <small>${time}</small><br>${text}`;
+    msg.innerHTML = `<strong>${user}</strong> <small>${formattedTime}</small><br>${text}`;
     msg.className = `chatmsg`;
     messagesBox.appendChild(msg);
     messagesBox.scrollTop = messagesBox.scrollHeight;
