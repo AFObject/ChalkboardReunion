@@ -236,6 +236,12 @@ function resizeCanvasDisplay() {
 
     const visibleHeight = 900 * scale;
     fatherCanvas.style.height = `${visibleHeight}px`;
+
+    const chatPanel = document.getElementById('chat-panel');
+    const container = document.getElementById('container');
+    chatPanel.style.height = container.clientHeight + 'px';
+    // console.log(`${chatPanel}, ${container}`)
+    // console.log(`chat panel height set to: ${chatPanel.clientHeight}, ${container.clientHeight}`);
 }
 
 window.addEventListener('resize', resizeCanvasDisplay);

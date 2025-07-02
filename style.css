@@ -59,6 +59,7 @@ h1 {
     backdrop-filter: blur(12px);
     overflow: hidden;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
+    height: 100%;
 }
 
 #outer-container {
@@ -77,8 +78,11 @@ h1 {
     background: rgba(0, 0, 0, 0.25);
     backdrop-filter: blur(12px);
     overflow: hidden;
-    min-height: 400px;
+    /* min-height: 550px; */
     min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    /* height: 100%; 根据父容器调整高度 */
 }
 
 
@@ -90,6 +94,7 @@ h1 {
     flex-wrap: wrap;
     gap: 15px;
     min-height: 76.5px;
+    flex-shrink: 0; /* 防止压缩 */
 }
 
 .tool-group {
@@ -295,6 +300,13 @@ footer {
     }
 }
 
+@media (min-width: 768px) {
+    #chat-panel {
+        max-width: 280px;
+    }
+}
+
+
 
 .clock-container {
     background: #ffffff;
@@ -370,8 +382,7 @@ footer {
 
 /* 聊天输入框容器 */
 .chat-input-container {
-    position: fixed;
-    bottom: 0;
+    flex-shrink: 0; /* 防止压缩 */
     height: 178px;
     width: 100%;
     overflow: hidden;
@@ -413,7 +424,7 @@ footer {
 .message-input {
     padding-right: 70px;
     min-height: 120px;
-    resize: vertical;
+    resize: none;
 }
 
 /* 发送按钮 */
@@ -447,13 +458,10 @@ footer {
 }
 
 #chat-messages {
-    position: fixed;
     flex: 1;
     padding: 10px;
     overflow-y: scroll;
-    top: 76.5px;
     width: 100%;
-    bottom: 178px;
     min-height: 200px;
 }
 
