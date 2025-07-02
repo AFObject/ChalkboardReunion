@@ -4,7 +4,11 @@ const canvasWidth = 1200;
 const canvasHeight = 900;
 const MAX_STROKES_TO_KEEP = 200;
 let canvasFullySynced = false;
-let lastSyncTime = Date.now();
+let lastSyncTime = 0;
+let isTabActive = true;
+
+const loadedStrokeKeys = new Set();
+let latestUpdatedStrokeKey = null;
 
 const fabricCanvas = new fabric.Canvas('canvas', {
     isDrawingMode: true,
@@ -119,7 +123,8 @@ fabricCanvas.on('path:created', (e) => {
 
     strokesRef.push({
         object: pathData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        author: userId
     });
 });
 
@@ -127,6 +132,9 @@ fabricCanvas.on('path:created', (e) => {
 strokesRef.limitToLast(200).on('child_added', (snapshot) => {
     const data = snapshot.val();
     if (!data || !data.object) return;
+
+    loadedStrokeKeys.add(snapshot.key);
+    latestUpdatedStrokeKey = snapshot.key;
 
     fabric.util.enlivenObjects([data.object], (objects) => {
         const path = objects[0];
@@ -144,35 +152,51 @@ strokesRef.limitToLast(200).on('child_added', (snapshot) => {
 // ⏳ 每 5 秒上传图像并清空矢量笔迹
 function updateBaseImageToFirebase() {
     if (!canvasFullySynced) return;
+    if (!isTabActive) return; // 页面非激活状态，禁止上传
     const uploadTime = Date.now();
     if (uploadTime - lastSyncTime < 15000) return; // 初次进入至少等 15 秒
+    if (uploadTime - lastSyncTime > 600000) {
+        loadBaseImage(); // 超过 10 分钟未同步，重新加载背景图
+        return;
+    }
 
-    const dataUrl = fabricCanvas.toDataURL('image/png');
-
-    // 上传 baseImage
-    baseImageRef.set({
-        data: dataUrl,
-        timestamp: uploadTime
-    });
-
-    // 🔁 清理旧 strokes，只保留最近 MAX_STROKES_TO_KEEP 条
     strokesRef.once('value').then(snapshot => {
-        const children = [];
+        let safeToUpload = true;
         snapshot.forEach(child => {
             const data = child.val();
-            children.push({
-                key: child.key,
-                timestamp: data.timestamp || 0
-            });
+            if (data.author !== userId && !loadedStrokeKeys.has(child.key)) {
+                safeToUpload = false;
+            }
+        });
+        if (!safeToUpload) return; // 有未同步 stroke，不上传
+
+        const dataUrl = fabricCanvas.toDataURL('image/png');
+
+        // 上传 baseImage
+        baseImageRef.set({
+            data: dataUrl,
+            timestamp: uploadTime
         });
 
-        // 时间从新到旧排序
-        children.sort((a, b) => b.timestamp - a.timestamp);
+        // 🔁 清理旧 strokes，只保留最近 MAX_STROKES_TO_KEEP 条
+        strokesRef.once('value').then(snapshot => {
+            const children = [];
+            snapshot.forEach(child => {
+                const data = child.val();
+                children.push({
+                    key: child.key,
+                    timestamp: data.timestamp || 0
+                });
+            });
 
-        // 删除多余部分
-        const toDelete = children.slice(MAX_STROKES_TO_KEEP);
-        toDelete.forEach(entry => {
-            strokesRef.child(entry.key).remove();
+            // 时间从新到旧排序
+            children.sort((a, b) => b.timestamp - a.timestamp);
+
+            // 删除多余部分
+            const toDelete = children.slice(MAX_STROKES_TO_KEEP);
+            toDelete.forEach(entry => {
+                strokesRef.child(entry.key).remove();
+            });
         });
     });
 }
@@ -183,11 +207,11 @@ window.addEventListener('beforeunload', updateBaseImageToFirebase); // 页面关
 // 🔄 初次加载 baseImage
 function loadBaseImage() {
     baseImageRef.once('value').then(snapshot => {
-        const url = snapshot.val();
-        if (!url) return;
+        const imageData = snapshot.val();
+        if (!imageData || !imageData.data) return;
         lastSyncTime = Date.now(); // 更新最后同步时间
 
-        fabric.Image.fromURL(url, function(img) {
+        fabric.Image.fromURL(imageData.data, function(img) {
             img.selectable = false;
             fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
 
@@ -294,5 +318,13 @@ connectedRef.on('value', (snap) => {
             statusEl.textContent = '连接已断开';
             statusIndicator.style.background = 'rgb(240, 149, 115)';
         }
+    }
+});
+
+document.addEventListener('visibilitychange', () => {
+    isTabActive = document.visibilityState === 'visible';
+    if (isTabActive) {
+        console.log('Tab is active, resuming sync...');
+        loadBaseImage(); // 页面恢复后主动同步
     }
 });
