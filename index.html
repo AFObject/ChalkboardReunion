@@ -65,11 +65,11 @@
             <div class="stats">
                 <div class="user-count-label">
                     <div class="status-indicator"></div>
-                    <span>当前在线: <strong id="user-count">3</strong> 人正在创作</span>
+                    <span>当前在线: <strong id="user-count">0</strong> 人正在创作</span>
                 </div>
                 <div class="connection-status">
-                    <div class="status-indicator"></div>
-                    <span>实时同步已连接</span>
+                    <div id="status-indicator" class="status-indicator"></div>
+                    <span id="connection-status-text">尚未连接</span>
                 </div>
             </div>
         </div>
@@ -96,7 +96,12 @@
         </div>
     </div>
     <footer>
-        <p>ChalkboardReunion &copy; 2025 | 2610 | Powered by Firebase & Vercel</p>
+        <!-- 引入 Font Awesome 图标库 -->
+        <p>
+        <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+        <!-- GitHub 图标链接 -->
+        <a href="https://github.com/AFObject/ChalkboardReunion" target="_blank" rel="noopener noreferrer" style="font-size: 26px; color: #777; transition: color 0.3s;"><i class="fa fa-github" style="vertical-align: middle;"></i></a>  chalkboard.2610.site &copy; 2025 | Powered by Firebase & Vercel</p>
+        <p>欢迎自由创作闲聊 | 可以擦除先前内容 | 不必频繁刷新页面 | 若有卡顿敬请谅解 ：）</p>
     </footer>
 
     <!-- <div class="podium-wrapper" id="podium-wrapper">

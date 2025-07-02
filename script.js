@@ -146,7 +146,7 @@ setInterval(() => {
     });
     baseImageRef.set(dataUrl);
 
-    const cutoff = Date.now() - 30 * 1000; // 30 秒前
+    const cutoff = Date.now() - 60 * 1000; // 30 秒前
     strokesRef.once('value').then(snapshot => {
         snapshot.forEach(child => {
             const data = child.val();
@@ -155,17 +155,36 @@ setInterval(() => {
             }
         });
     });
-}, 5000);
+}, 30000);
 
 // 🔄 初次加载 baseImage
-baseImageRef.once('value').then(snapshot => {
-    const url = snapshot.val();
-    if (!url) return;
-    fabric.Image.fromURL(url, function(img) {
-        img.selectable = false;
-        fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
+function loadBaseImage() {
+    console.log('Loading base image from Firebase...');
+    baseImageRef.once('value').then(snapshot => {
+        const url = snapshot.val();
+        if (!url) return;
+
+        fabric.Image.fromURL(url, function(img) {
+            img.selectable = false;
+            fabricCanvas.setBackgroundImage(img, fabricCanvas.renderAll.bind(fabricCanvas));
+
+            // ✅ 加载所有 strokes，不加时间限制
+            strokesRef.once('value').then(snapshot => {
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data && data.object) {
+                        fabric.util.enlivenObjects([data.object], (objects) => {
+                            const path = objects[0];
+                            path.set({ selectable: false, evented: false, fill: null });
+                            fabricCanvas.add(path);
+                        });
+                    }
+                });
+            });
+        });
     });
-});
+}
+loadBaseImage(); // 页面加载时调用
 
 // 💾 保存按钮：下载 PNG
 saveBtn.addEventListener('click', () => {
@@ -178,8 +197,21 @@ saveBtn.addEventListener('click', () => {
 // 👥 在线用户统计
 const presenceRef = database.ref('presence');
 const userId = Math.random().toString(36).substring(2, 15);
-presenceRef.child(userId).set(true);
-presenceRef.child(userId).onDisconnect().remove();
+function goOnline() {
+    presenceRef.child(userId).set(true);
+    presenceRef.child(userId).onDisconnect().remove();
+}
+goOnline(); // 初次上线
+let previouslyConnected = false;
+firebase.database().ref('.info/connected').on('value', (snapshot) => {
+    console.log(`Connection status changed: ${snapshot.val()}, previously connected: ${previouslyConnected}`);
+    const isConnected = snapshot.val() === true;
+    if (isConnected && !previouslyConnected) {
+        loadBaseImage(); // 断线 → 联网后重新加载背景图
+        goOnline();      // 同时更新 presence
+    }
+    previouslyConnected = isConnected;
+});
 presenceRef.on('value', (snapshot) => {
     const count = snapshot.numChildren();
     const counter = document.getElementById('user-count');
@@ -190,7 +222,6 @@ presenceRef.on('value', (snapshot) => {
 function resizeCanvasDisplay() {
     const fatherCanvas = document.getElementById('father-canvas'); // 新的父容器
     const canvasWrapper = fabricCanvas.wrapperEl; // 就是 .canvas-container
-    console.log('Canvas wrapper:', canvasWrapper);
     // const container = document.getElementById('canvas-container');
     const containerWidth = fatherCanvas.clientWidth;
     const scale = containerWidth / 1200;
@@ -209,3 +240,21 @@ function resizeCanvasDisplay() {
 
 window.addEventListener('resize', resizeCanvasDisplay);
 resizeCanvasDisplay();
+
+const connectedRef = firebase.database().ref('.info/connected');
+
+connectedRef.on('value', (snap) => {
+    const isConnected = snap.val() === true;
+
+    const statusEl = document.getElementById('connection-status-text');
+    const statusIndicator = document.getElementById('status-indicator');
+    if (statusEl) {
+        if (isConnected) {
+            statusEl.textContent = '实时同步已连接';
+            statusIndicator.style.background = '#4CAF50';
+        } else {
+            statusEl.textContent = '连接已断开';
+            statusIndicator.style.background = 'rgb(240, 149, 115)';
+        }
+    }
+});
