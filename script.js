@@ -2,7 +2,7 @@
 // 🎨 使用 Fabric.js 初始化画布
 const canvasWidth = 1200;
 const canvasHeight = 900;
-const MAX_STROKES_TO_KEEP = 200;
+const MAX_STROKES_TO_KEEP = 100;
 let canvasFullySynced = false;
 let lastSyncTime = 0;
 let isTabActive = true;
@@ -154,8 +154,10 @@ function updateBaseImageToFirebase() {
     if (!canvasFullySynced) return;
     if (!isTabActive) return; // 页面非激活状态，禁止上传
     const uploadTime = Date.now();
+    if (lastSyncTime == 0) return;
     if (uploadTime - lastSyncTime < 15000) return; // 初次进入至少等 15 秒
     if (uploadTime - lastSyncTime > 600000) {
+        console.log("超过 10 分钟未同步，重新加载背景图");
         loadBaseImage(); // 超过 10 分钟未同步，重新加载背景图
         return;
     }
@@ -206,6 +208,11 @@ window.addEventListener('beforeunload', updateBaseImageToFirebase); // 页面关
 
 // 🔄 初次加载 baseImage
 function loadBaseImage() {
+    if (Date.now() - lastSyncTime < 1000) {
+        console.log("loadBaseImage skipped, last sync too recent");
+        return;
+    }
+    console.log("loadBaseImage");
     baseImageRef.once('value').then(snapshot => {
         const imageData = snapshot.val();
         if (!imageData || !imageData.data) return;
@@ -217,6 +224,7 @@ function loadBaseImage() {
 
             // ⬇ 加载全部 strokes
             strokesRef.once('value').then(snapshot => {
+                console.log(strokesRef);
                 const pending = [];
                 snapshot.forEach(child => {
                     const data = child.val();
@@ -240,6 +248,7 @@ function loadBaseImage() {
         });
     });
 }
+console.log("initializing loadBaseImage");
 loadBaseImage(); // 页面加载时调用
 
 // 💾 保存按钮：下载 PNG
@@ -258,11 +267,21 @@ function goOnline() {
     presenceRef.child(userId).onDisconnect().remove();
 }
 goOnline(); // 初次上线
-let previouslyConnected = false;
+let previouslyConnected = -1;
 firebase.database().ref('.info/connected').on('value', (snapshot) => {
-    console.log(`Connection status changed: ${snapshot.val()}, previously connected: ${previouslyConnected}`);
-    const isConnected = snapshot.val() === true;
-    if (isConnected && !previouslyConnected) {
+    console.log(`Connection status changed: ${snapshot.val()}, previously connected: ${previouslyConnected}, ${lastSyncTime}, ${Date.now()}`);
+    const isConnected = snapshot.val() === true ? 1 : 0;
+    if (previouslyConnected === -1) {
+        console.log("TD");
+        previouslyConnected = isConnected;
+        return;
+    }
+    if (lastSyncTime == 0) {
+        console.log("TD 2");
+        return;
+    }
+    if (isConnected == 1 && !previouslyConnected) {
+        console.log("断网重新连接到 Firebase");
         loadBaseImage(); // 断线 → 联网后重新加载背景图
         goOnline();      // 同时更新 presence
     }
