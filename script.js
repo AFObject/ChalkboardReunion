@@ -208,6 +208,8 @@ window.addEventListener('beforeunload', updateBaseImageToFirebase); // 页面关
 
 // 🔄 初次加载 baseImage
 function loadBaseImage() {
+    canvasFullySynced = false;
+    loadedStrokeKeys.clear();
     if (Date.now() - lastSyncTime < 1000) {
         console.log("loadBaseImage skipped, last sync too recent");
         return;
@@ -343,6 +345,10 @@ connectedRef.on('value', (snap) => {
 document.addEventListener('visibilitychange', () => {
     isTabActive = document.visibilityState === 'visible';
     if (isTabActive) {
+        if (Date.now() - lastSyncTime < 10000) {
+            console.log("Tab is active, but last sync too recent, skipping loadBaseImage");
+            return;
+        }
         console.log('Tab is active, resuming sync...');
         loadBaseImage(); // 页面恢复后主动同步
     }
