@@ -202,7 +202,7 @@ function updateBaseImageToFirebase() {
         });
     });
 }
-setInterval(updateBaseImageToFirebase, 20000); // 每 20 秒执行
+setInterval(updateBaseImageToFirebase, 10000); // 每 20 秒执行
 
 window.addEventListener('beforeunload', updateBaseImageToFirebase); // 页面关闭时也上传
 
@@ -210,11 +210,12 @@ window.addEventListener('beforeunload', updateBaseImageToFirebase); // 页面关
 function loadBaseImage() {
     canvasFullySynced = false;
     loadedStrokeKeys.clear();
-    if (Date.now() - lastSyncTime < 1000) {
+    if (Date.now() - lastSyncTime < 5000) {
         console.log("loadBaseImage skipped, last sync too recent");
         return;
     }
     console.log("loadBaseImage");
+    lastSyncTime = Date.now(); // 更新最后同步时间
     baseImageRef.once('value').then(snapshot => {
         const imageData = snapshot.val();
         if (!imageData || !imageData.data) return;
@@ -342,14 +343,18 @@ connectedRef.on('value', (snap) => {
     }
 });
 
+let leaveTime = 0;
 document.addEventListener('visibilitychange', () => {
     isTabActive = document.visibilityState === 'visible';
     if (isTabActive) {
-        if (Date.now() - lastSyncTime < 10000) {
-            console.log("Tab is active, but last sync too recent, skipping loadBaseImage");
+        console.log(`离开页面 ${Date.now() - leaveTime} 秒`);
+        if (Date.now() - leaveTime < 30000) {
+            console.log('Tab is active, but recently left, skipping sync...');
             return;
         }
         console.log('Tab is active, resuming sync...');
         loadBaseImage(); // 页面恢复后主动同步
+    } else {
+        leaveTime = Date.now();
     }
 });
