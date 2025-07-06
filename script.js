@@ -6,6 +6,7 @@ const MAX_STROKES_TO_KEEP = 100;
 let canvasFullySynced = false;
 let lastSyncTime = 0;
 let isTabActive = true;
+let recentlyWritten = false; // 用于判断是否有新笔迹
 
 const loadedStrokeKeys = new Set();
 let latestUpdatedStrokeKey = null;
@@ -99,6 +100,7 @@ swatches.forEach(btn => {
 // ✍️ 每次绘制完成上传笔迹
 fabricCanvas.on('path:created', (e) => {
     const path = e.path;
+    recentlyWritten = true;
 
     // 移除末尾闭合命令（如有）
     const lastSeg = path.path[path.path.length - 1];
@@ -129,7 +131,7 @@ fabricCanvas.on('path:created', (e) => {
 });
 
 // 📥 Firebase 实时同步：还原历史笔迹
-strokesRef.limitToLast(200).on('child_added', (snapshot) => {
+strokesRef.limitToLast(100).on('child_added', (snapshot) => {
     const data = snapshot.val();
     if (!data || !data.object) return;
 
@@ -149,28 +151,76 @@ strokesRef.limitToLast(200).on('child_added', (snapshot) => {
     });
 });
 
+// 🚮 只保留最近 MAX_STROKES_TO_KEEP 条（恒为 100）
+function trimOldStrokes() {
+  const MAX = MAX_STROKES_TO_KEEP; // 100
+  // ① 先拿“最新 101 条”里的最老那一条，得到时间阈值
+  strokesRef
+    .orderByChild('timestamp')
+    .limitToLast(MAX + 1)
+    .once('value')
+    .then(snap => {
+      let oldestAllowedTs = null;
+      snap.forEach(child => {
+        const ts = child.val().timestamp || 0;
+        if (oldestAllowedTs === null || ts < oldestAllowedTs) oldestAllowedTs = ts;
+      });
+      if (oldestAllowedTs === null) return;
+
+      // ② 把 timestamp < oldestAllowedTs 的全部一次性删掉
+      return strokesRef
+        .orderByChild('timestamp')
+        .endAt(oldestAllowedTs - 1)
+        .once('value')
+        .then(oldSnap => {
+          const updates = {};
+          oldSnap.forEach(c => (updates[c.key] = null));
+          if (Object.keys(updates).length) return strokesRef.update(updates);
+        });
+    })
+    .catch(console.error);
+}
+
+
 // ⏳ 每 5 秒上传图像并清空矢量笔迹
 function updateBaseImageToFirebase() {
-    if (!canvasFullySynced) return;
-    if (!isTabActive) return; // 页面非激活状态，禁止上传
+    console.log("updateBaseImageToFirebase called");
+    if (!canvasFullySynced) {
+        console.log("Canvas not fully synced, skipping upload");
+        return;
+    }
+    if (!isTabActive) {
+        console.log("Tab not active, skipping upload");
+        return; // 如果标签页不活跃，则不上传
+    }
     const uploadTime = Date.now();
-    if (lastSyncTime == 0) return;
-    if (uploadTime - lastSyncTime < 15000) return; // 初次进入至少等 15 秒
+    if (lastSyncTime == 0) {
+        console.log("lastSyncTime is 0, skipping upload");
+        return;
+    }
+    if (uploadTime - lastSyncTime < 15000) {
+        console.log("最近 15 秒才同步，跳过上传");
+        return;
+    }
     if (uploadTime - lastSyncTime > 600000) {
         console.log("超过 10 分钟未同步，重新加载背景图");
         loadBaseImage(); // 超过 10 分钟未同步，重新加载背景图
         return;
     }
-
-    strokesRef.once('value').then(snapshot => {
-        let safeToUpload = true;
-        snapshot.forEach(child => {
-            const data = child.val();
-            if (data.author !== userId && !loadedStrokeKeys.has(child.key)) {
-                safeToUpload = false;
-            }
-        });
-        if (!safeToUpload) return; // 有未同步 stroke，不上传
+    if (!recentlyWritten) {
+        console.log("没有新笔迹，跳过上传");
+        return; // 没有新笔迹，跳过上传
+    }
+    recentlyWritten = false; // 重置标志
+    console.log('uploadBaseImageToFirebase REALLY called');
+    strokesRef.orderByChild('timestamp').limitToLast(1).once('value').then(snap => {
+        const latest = Object.values(snap.val() || {})[0];
+        const safeToUpload = !latest || latest.author === userId;
+        if (!safeToUpload) return; // 有别人刚写的，不上传
+        if (!safeToUpload) {
+            console.log("有未同步的 stroke，禁止上传 baseImage");
+            return; // 有未同步 stroke，不上传
+        }
 
         const dataUrl = fabricCanvas.toDataURL('image/png');
 
@@ -179,30 +229,11 @@ function updateBaseImageToFirebase() {
             data: dataUrl,
             timestamp: uploadTime
         });
-
-        // 🔁 清理旧 strokes，只保留最近 MAX_STROKES_TO_KEEP 条
-        strokesRef.once('value').then(snapshot => {
-            const children = [];
-            snapshot.forEach(child => {
-                const data = child.val();
-                children.push({
-                    key: child.key,
-                    timestamp: data.timestamp || 0
-                });
-            });
-
-            // 时间从新到旧排序
-            children.sort((a, b) => b.timestamp - a.timestamp);
-
-            // 删除多余部分
-            const toDelete = children.slice(MAX_STROKES_TO_KEEP);
-            toDelete.forEach(entry => {
-                strokesRef.child(entry.key).remove();
-            });
-        });
+        
+        trimOldStrokes(); // 清理旧笔迹
     });
 }
-setInterval(updateBaseImageToFirebase, 10000); // 每 20 秒执行
+setInterval(updateBaseImageToFirebase, 20000); // 每 20 秒执行
 
 window.addEventListener('beforeunload', updateBaseImageToFirebase); // 页面关闭时也上传
 
@@ -237,6 +268,7 @@ function loadBaseImage() {
                                 const path = objects[0];
                                 path.set({ selectable: false, evented: false, fill: null });
                                 fabricCanvas.add(path);
+                                loadedStrokeKeys.add(child.key);
                                 resolve();
                             });
                         }));
@@ -348,7 +380,7 @@ document.addEventListener('visibilitychange', () => {
     isTabActive = document.visibilityState === 'visible';
     if (isTabActive) {
         console.log(`离开页面 ${Date.now() - leaveTime} 秒`);
-        if (Date.now() - leaveTime < 30000) {
+        if (Date.now() - leaveTime < 60000) {
             console.log('Tab is active, but recently left, skipping sync...');
             return;
         }
