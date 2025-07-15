@@ -412,7 +412,13 @@ footer {
 }
 
 /* 昵称输入框 */
-.nickname-input {
+/* .nickname-input {
+    /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
+/* } */ 
+
+.emoji-container {
+    display: flex;
+    flex-direction: row;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -511,4 +517,76 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 input[type="color"]::-webkit-color-swatch {
     border: none;
     border-radius: 4px;
+}
+
+/* --- 表情功能新增样式 --- */
+
+/* 让消息输入容器支持相对定位，以便安放表情面板 */
+.message-container {
+    position: relative;
+}
+
+/* 表情切换按钮 */
+.emoji-toggle-btn {
+    width: 50px;
+    border: none;
+    background: transparent;
+    font-size: 22px;
+    padding: 0 5px;
+    cursor: pointer;
+    color: #555;
+    transition: transform 0.2s;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.emoji-toggle-btn:hover {
+    transform: scale(1.2);
+}
+
+/* 表情面板 */
+.emoji-panel {
+    position: relative;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    height: 200px;
+    max-height: 200px;
+    overflow-y: scroll;
+    background-color: #222;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 8px;
+    z-index: 1000;
+}
+
+/* 用于控制面板显示/隐藏的类 */
+.emoji-panel.hidden {
+    display: none;
+}
+
+/* 面板中的单个表情 */
+.emoji-panel .emoji-item {
+    width: 40px;
+    height: 40px;
+    padding: 4px;
+    box-sizing: border-box;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background-color 0.2s;
+}
+
+.emoji-panel .emoji-item:hover {
+    background-color: #444;
+}
+
+/* 聊天消息中渲染出来的表情图片 */
+.chat-emoji {
+    width: 28px;  /* 调整为您认为合适的大小 */
+    height: 28px;
+    vertical-align: middle; /* 关键：让表情和文字垂直对齐 */
+    margin: 0 2px;
 }
