@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="chess.css">
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
@@ -127,10 +128,21 @@
             <img id="avatar" class="teacher-avatar" src="" alt="老师头像" />
         </div>
     </div> -->
+    <div class="game-container">
+        <h1>GOMOKU</h1>
+        <div id="statusMessage" class="status-message">BLACK'S TURN</div>
+        <canvas id="gomokuBoard"></canvas>
+        <div class="controls">
+            <button id="undoButton" class="control-button primary" title="Undo">&#x2B05;</button> <!-- Left Arrow -->
+            <button id="redoButton" class="control-button primary" title="Redo">&#x27A1;</button> <!-- Right Arrow -->
+            <button id="restartButton" class="control-button secondary" title="Restart">&#x1F504;</button> <!-- Clockwise Arrows -->
+        </div>
+    </div>
 
     <script src="script.js"></script>
     <script src="addon.js"></script>
     <script src="chat.js"></script>
+    <script src="chess.js"></script>
 </body>
 
 </html>

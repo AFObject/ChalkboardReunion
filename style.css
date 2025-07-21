@@ -11,7 +11,7 @@
 }
 
 body {
-    background: linear-gradient(135deg, #ffffff, #c4fff5, #b0e5ff);
+    background: linear-gradient(135deg, #ffffff, #e6fffa, #ceeefe);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -168,7 +168,7 @@ button:active,
     border-radius: 5px;
 }
 
-canvas {
+#canvas {
     touch-action: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
