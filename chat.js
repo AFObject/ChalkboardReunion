@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function scrollToBottom(element) {
-    console.log("滚动到底部的元素：", element);
+    // console.log("滚动到底部的元素：", element);
     if (element) {
         element.scrollTop = element.scrollHeight;
     } else {

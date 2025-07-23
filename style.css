@@ -3,14 +3,19 @@
     src: url('./fonts/DS-DIGI.TTF') format('truetype');
 }
 
+@font-face {
+    font-family: 'Press Start 2P';
+    src: url('./fonts/PressStart2P-Regular.ttf') format('truetype');
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #ffffff, #c4fff5, #b0e5ff);
     min-height: 100vh;
     display: flex;
@@ -95,6 +100,16 @@ h1 {
     gap: 15px;
     min-height: 76.5px;
     flex-shrink: 0; /* 防止压缩 */
+}
+
+#gaseu {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 18px;
+    gap: 0px;
+    height: 76.5px;
+    line-height: 76.5px;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 .tool-group {
@@ -589,4 +604,110 @@ input[type="color"]::-webkit-color-swatch {
     height: 28px;
     vertical-align: middle; /* 关键：让表情和文字垂直对齐 */
     margin: 0 2px;
+}
+
+/* ========= */
+/* GAME PART */
+/* GAME PART */
+/* GAME PART */
+/* GAME PART */
+/* GAME PART */
+/* GAME PART */
+/* ========= */
+
+#gomoku-hint {
+    cursor: pointer;
+}
+
+.game-container {
+    /* z-index: 2;
+    position: fixed; */
+    font-family: 'Press Start 2P', cursive; /* Pixel font for overall text */
+    background-color: #3a3f4b; /* Slightly lighter dark gray */
+    border-radius: 20px; /* Slightly less rounded for pixel feel */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); /* Deeper shadow */
+    padding: 1.5rem; /* Reduced padding for compact look */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem; /* Reduced gap */
+    /* width: 100%; */
+    width: 500px; /* Max width for larger screens, slightly smaller */
+    height: 680px;
+}
+#gomokuBoard {
+    touch-action: manipulation; /* Prevent default touch actions like double-tap zoom */
+    image-rendering: pixelated; /* Ensure pixelated rendering for canvas content */
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+.controls {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    gap: 0.75rem; /* Smaller gap for buttons */
+    justify-content: center;
+    width: 100%;
+}
+.control-button {
+    font-family: 'Press Start 2P', cursive; /* Pixel font for buttons */
+    padding: 0.75rem 1.25rem; /* Adjusted padding */
+    border-radius: 0.5rem; /* Sharper button corners */
+    font-weight: 700;
+    transition: all 0.1s ease-in-out; /* Faster transition */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Flat shadow */
+    cursor: pointer;
+    flex-grow: 1; /* Allow buttons to grow */
+    min-width: 80px; /* Smaller minimum width for icons */
+    font-size: 1.5rem; /* Larger font size for icons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 1px 1px 0px rgba(0,0,0,0.2); /* Pixelated text shadow */
+}
+.control-button:hover {
+    transform: translateY(-1px); /* Subtle hover effect */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+.control-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.control-button.primary {
+    background-color: #61dafb; /* Bright blue */
+    color: #282c34;
+}
+.control-button.primary:hover {
+    background-color: #4dcffb;
+}
+.control-button.secondary {
+    background-color: #ff6b6b; /* Bright red */
+    color: #282c34;
+}
+.control-button.secondary:hover {
+    background-color: #ff4d4d;
+}
+#returnButton {
+    background-color: #86df89;
+}
+#returnButton:hover {
+    background-color: #71cc74;
+}
+.status-message {
+    font-size: 1rem; /* Adjusted font size */
+    font-weight: 700;
+    color: #eeeeee; /* Light text color */
+    text-align: center;
+    text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
+}
+h1 {
+    font-size: 2rem; /* Adjusted title size */
+    color: #eeeeee;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 600px) {
+    .game-container {
+        width: 460px;
+    }
 }

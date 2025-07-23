@@ -9,10 +9,47 @@
 // firebase.initializeApp(firebaseConfig);
 // const database = firebase.database();
 
+// 获取DOM元素
+const hintButton = document.getElementById('gomoku-hint');
+const gameContainer = document.getElementById('game-container');
+// gameContainers[0].style.display = 'none'; // 初始隐藏游戏区域
+// hintButton.style.color = '#ddd'; // 设置按钮颜色为深色
+
+// 为按钮添加点击事件监听
+hintButton.addEventListener('click', () => {
+    gameContainer.scrollIntoView({ behavior: 'smooth' });
+    // 遍历所有.game-container元素
+    // gameContainers.forEach(container => {
+    //     // 切换显示状态
+    //     if (container.style.display === 'none') {
+    //         // 显示元素并添加淡入动画
+    //         container.style.display = 'block';
+    //         container.style.opacity = '0';
+    //         setTimeout(() => {
+    //             container.style.opacity = '1';
+    //             container.style.transition = 'opacity 0.3s ease-in-out';
+    //             // hintButton.style.color = '#fff'; // 设置按钮颜色为深色
+    //         }, 10);
+    //     } else {
+    //         // 隐藏元素并添加淡出动画
+    //         container.style.opacity = '0';
+    //         container.addEventListener('transitionend', function fadeOut() {
+    //             container.style.display = 'none';
+    //             container.removeEventListener('transitionend', fadeOut);
+    //         }, { once: true });
+    //         // hintButton.style.color = '#ddd'; // 设置按钮颜色为深色
+    //     }
+    // });
+    
+    // 切换按钮文本和样式（可选）
+    // hintButton.textContent = hintButton.textContent.includes('显示') ? 
+    //     '隐藏游戏区域' : '显示游戏区域';
+});
+
 // Game constants
 const BOARD_SIZE = 15; // 15x15 board
-const CELL_SIZE = 35; // Slightly reduced size of each cell in pixels for a smaller board
-const STONE_RADIUS = 16; // Adjusted stone radius
+const CELL_SIZE = 30; // Slightly reduced size of each cell in pixels for a smaller board
+const STONE_RADIUS = 13; // Adjusted stone radius
 const LINE_WIDTH = 1; // Width of board lines
 
 // Game state variables
@@ -30,6 +67,7 @@ const statusMessageElement = document.getElementById('statusMessage');
 const undoButton = document.getElementById('undoButton');
 const redoButton = document.getElementById('redoButton');
 const restartButton = document.getElementById('restartButton');
+const returnButton = document.getElementById('returnButton');
 
 // Initialize board dimensions
 canvas.width = (BOARD_SIZE - 1) * CELL_SIZE + 2 * CELL_SIZE;
@@ -131,7 +169,7 @@ function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw grid lines
-    ctx.strokeStyle = '#333333'; // Dark lines for light board
+    ctx.strokeStyle = '#eeeeee'; // Dark lines for light board
     ctx.lineWidth = LINE_WIDTH;
     for (let i = 0; i < BOARD_SIZE; i++) {
         // Vertical lines
@@ -153,12 +191,12 @@ function drawBoard() {
         [3, 7], [7, 3], [7, 11], [11, 7], // Middles
         [7, 7] // Center
     ];
-    ctx.fillStyle = '#333333'; // Dark for star points
+    ctx.fillStyle = '#eeeeee'; // Dark for star points
     starPoints.forEach(([row, col]) => {
         const x = (col + 1) * CELL_SIZE;
         const y = (row + 1) * CELL_SIZE;
         ctx.beginPath();
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
         ctx.fill();
     });
 
@@ -391,6 +429,10 @@ canvas.addEventListener('touchstart', handleClick, { passive: false }); // For m
 undoButton.addEventListener('click', undoMove);
 redoButton.addEventListener('click', redoMove);
 restartButton.addEventListener('click', restartGame);
+returnButton.addEventListener('click', () => {
+    // Scroll back to the top of the page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 
 // Initial setup on window load
 window.onload = function() {
@@ -401,4 +443,4 @@ window.onload = function() {
 };
 
 // Handle window resize to redraw board
-window.addEventListener('resize', drawBoard);
+// window.addEventListener('resize', drawBoard);

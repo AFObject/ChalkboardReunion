@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="chess.css">
+    <!-- <link rel="stylesheet" href="chess.css"> -->
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
@@ -81,7 +81,10 @@
 
         <!-- 聊天面板 -->
         <div id="chat-panel">
-            <div class="toolbar" style="font-size: 25px;"><strong>ガセウ</strong></div>
+            <div class="toolbar" id="gaseu">
+                <strong>GASEU</strong>|
+                <strong id="gomoku-hint">GOMOKU</strong>
+            </div>
             <div id="chat-messages">
                 <div id="message-container"></div>
                     <!-- 聊天消息将动态添加到这里 -->   
@@ -128,14 +131,15 @@
             <img id="avatar" class="teacher-avatar" src="" alt="老师头像" />
         </div>
     </div> -->
-    <div class="game-container">
+    <div class="game-container" id="game-container">
         <h1>GOMOKU</h1>
         <div id="statusMessage" class="status-message">BLACK'S TURN</div>
         <canvas id="gomokuBoard"></canvas>
         <div class="controls">
-            <button id="undoButton" class="control-button primary" title="Undo">&#x2B05;</button> <!-- Left Arrow -->
-            <button id="redoButton" class="control-button primary" title="Redo">&#x27A1;</button> <!-- Right Arrow -->
-            <button id="restartButton" class="control-button secondary" title="Restart">&#x1F504;</button> <!-- Clockwise Arrows -->
+            <button id="returnButton" class="control-button" title="Return">&#x2191;</button> <!-- Left Arrow -->
+            <button id="undoButton" class="control-button primary" title="Undo">&#x00AB;</button> <!-- Left Arrow -->
+            <button id="redoButton" class="control-button primary" title="Redo">&#x00BB;</button> <!-- Right Arrow -->
+            <button id="restartButton" class="control-button secondary" title="Restart">&#x25BC;</button> <!-- Clockwise Arrows -->
         </div>
     </div>
 
